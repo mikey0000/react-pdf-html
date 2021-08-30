@@ -8,6 +8,8 @@ export type Tag =
   | 'h5'
   | 'h6'
   | 'div'
+  | 'section'
+  | 'span'
   | 'p'
   | 'blockquote'
   | 'article'
@@ -37,7 +39,8 @@ export type Tag =
   | 'td'
   | 'th'
   | 'thead'
-  | 'tbody';
+  | 'tbody'
+  | 'svg';
 
 export const isBlock: Record<Tag, boolean> & Record<string, boolean> = {
   html: true,
@@ -50,6 +53,8 @@ export const isBlock: Record<Tag, boolean> & Record<string, boolean> = {
   h6: true,
 
   div: true,
+  section: true,
+  span: true,
   p: true,
   blockquote: true,
   article: true,
@@ -70,6 +75,8 @@ export const isBlock: Record<Tag, boolean> & Record<string, boolean> = {
   cite: false,
   code: false,
   abbr: false,
+
+  svg: true,
 
   a: false,
   img: false,

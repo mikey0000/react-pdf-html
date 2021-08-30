@@ -1,15 +1,10 @@
-import {
-  HTMLElement,
-  Node as HTMLNode,
-  NodeType,
-  parse,
-  TextNode,
-} from 'node-html-parser';
+import { parse } from 'node-html-parser';
 import { Style } from '@react-pdf/types';
 import { Tag } from './tags';
 import css, { Declaration, Rule } from 'css';
 import supportedStyles from './supportedStyles';
 import { HtmlStyles } from './styles';
+import { CssToPDFTranslate } from './css/translate';
 const camelize = require('camelize');
 
 export type HtmlContent = (HtmlElement | string)[];
@@ -17,7 +12,7 @@ export type HtmlContent = (HtmlElement | string)[];
 export type HtmlElement = HTMLElement & {
   tag: Tag | 'string';
   parentNode: HtmlElement;
-  style: Style[];
+  pdfStyle: Style[];
   content: HtmlContent;
   indexOfType: number;
   querySelectorAll: (selector: string) => HtmlElement[];
@@ -79,7 +74,7 @@ export const convertStylesheet = (stylesheet: string): HtmlStyles => {
 export const convertElementStyle = (
   styleAttr: string,
   tag: string
-): Style | undefined => {
+): Style | {} => {
   try {
     const parsed = css.parse(`${tag} { ${styleAttr} }`, {
       source: tag,
@@ -87,27 +82,29 @@ export const convertElementStyle = (
     const rules: Rule[] =
       parsed.stylesheet?.rules?.filter((rule) => rule.type === 'rule') || [];
     const firstRule = rules.shift();
-    return firstRule ? convertRule(firstRule, tag) : undefined;
+    return firstRule ? convertRule(firstRule, tag) : {};
   } catch (e) {
     console.error(
       `Error parsing style attribute "${styleAttr}" for tag: ${tag}`,
       e
     );
   }
+  return {};
 };
 
-export const convertNode = (node: HTMLNode): HtmlElement | string => {
-  if (node.nodeType === NodeType.TEXT_NODE) {
-    return (node as TextNode).rawText;
+export const convertNode = (node: Node): HtmlElement | string => {
+  if (node.nodeType === Node.TEXT_NODE) {
+    return (node as Text).wholeText;
   }
-  if (node.nodeType === NodeType.COMMENT_NODE) {
+  if (node.nodeType === Node.COMMENT_NODE) {
     return '';
   }
-  if (node.nodeType !== NodeType.ELEMENT_NODE) {
+  if (node.nodeType !== Node.ELEMENT_NODE) {
     throw new Error('Not sure what this is');
   }
+
   const html = node as HTMLElement;
-  const content = html.childNodes.map(convertNode);
+  const content = Array.from(html.childNodes).map(convertNode);
   const kindCounters: Record<string, number> = {};
   content.forEach((child) => {
     if (typeof child !== 'string') {
@@ -118,33 +115,160 @@ export const convertNode = (node: HTMLNode): HtmlElement | string => {
     }
   });
 
-  let style: Style | undefined;
-  if (html.attributes.style && html.attributes.style.trim()) {
-    style = convertElementStyle(html.attributes.style, html.tagName);
+  let style: Style = {};
+  const styleAttr = html.getAttribute('style');
+  if (styleAttr) {
+    style = convertElementStyle(styleAttr.trim(), html.tagName);
+  }
+
+  const suppStyles = [
+    'alignContent',
+    'alignItems',
+    'alignSelf',
+    'flex',
+    'flexDirection',
+    'flexWrap',
+    'flexFlow',
+    'flexGrow',
+    'flexShrink',
+    'flexBasis',
+    'justifyContent',
+    'order',
+
+    // Layout
+    'bottom',
+    'display',
+    'left',
+    'position',
+    'right',
+    'top',
+    'overflow',
+    'zIndex',
+
+    // Dimension
+    'height',
+    'maxHeight',
+    'maxWidth',
+    'minHeight',
+    'minWidth',
+    'width',
+
+    // Color
+    //'backgroundColor', -- has issues
+    'color',
+    'opacity',
+
+    // Text
+    'fontSize',
+    'fontFamily',
+    'fontStyle',
+    'fontWeight',
+    //'letterSpacing', -- has issues
+    //'lineHeight', -- has issues
+    'maxLines',
+    'textAlign',
+    'textDecoration',
+    'textDecorationColor',
+    'textDecorationStyle',
+    'textIndent',
+    'textOverflow',
+    'textTransform',
+
+    // Sizing/positioning
+    'objectFit',
+    'objectPosition',
+    'objectPositionX',
+    'objectPositionY',
+
+    // Margin/padding
+    'margin',
+    'marginHorizontal',
+    'marginVertical',
+    'marginTop',
+    'marginRight',
+    'marginBottom',
+    'marginLeft',
+    'padding',
+    'paddingHorizontal',
+    'paddingVertical',
+    'paddingTop',
+    'paddingRight',
+    'paddingBottom',
+    'paddingLeft',
+
+    // Transformations
+    'transform',
+    'transformOrigin',
+    'transformOriginX',
+    'transformOriginY',
+
+    // Borders
+    'border',
+    'borderWidth',
+    'borderColor',
+    'borderStyle',
+    'borderTop',
+    'borderTopColor',
+    'borderTopStyle',
+    'borderTopWidth',
+    'borderRight',
+    'borderRightColor',
+    'borderRightStyle',
+    'borderRightWidth',
+    'borderBottom',
+    'borderBottomColor',
+    'borderBottomStyle',
+    'borderBottomWidth',
+    'borderLeft',
+    'borderLeftColor',
+    'borderLeftStyle',
+    'borderLeftWidth',
+    'borderTopLeftRadius',
+    'borderTopRightRadius',
+    'borderBottomRightRadius',
+    'borderBottomLeftRadius',
+    'borderRadius',
+  ];
+
+  //let computedStyle: Style | undefined;
+  if (window) {
+    const computedStyles = window.getComputedStyle(html);
+    if (computedStyles.getPropertyValue('display') === 'none') {
+      return '';
+    }
+    suppStyles.forEach((key) => {
+      const computedStyle = computedStyles[key as keyof CSSStyleDeclaration];
+      if (computedStyle) {
+        style[key as keyof Style] = CssToPDFTranslate(
+          key,
+          computedStyle as string
+        );
+      }
+    });
   }
 
   return Object.assign(html, {
     tag: (html.tagName || '').toLowerCase() as Tag | string,
-    style: style ? [style] : [],
+    pdfStyle: style ? [style] : [],
     content,
     indexOfType: 0,
   }) as HtmlElement;
 };
 
 const parseHtml = (
-  text: string
+  dom: HTMLElement
 ): { stylesheets: HtmlStyles[]; rootElement: HtmlElement } => {
-  const html = parse(text, { comment: false });
-  const stylesheets = html
-    .querySelectorAll('style')
+  const stylesheets = Array.from(dom.querySelectorAll('style'))
     .map((styleNode) =>
-      styleNode.childNodes.map((textNode) => textNode.rawText.trim()).join('\n')
+      Array.from(styleNode.childNodes)
+        .map((textNode) => (textNode as Text).wholeText.trim())
+        .join('\n')
     )
     .filter((styleText) => !!styleText)
     .map(convertStylesheet);
   return {
     stylesheets,
-    rootElement: convertNode(html) as HtmlElement,
+    rootElement: convertNode(dom) as HtmlElement,
   };
 };
 

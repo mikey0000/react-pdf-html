@@ -1,10 +1,10 @@
-import React, { ReactElement } from 'react';
+import React, {ReactDOM, ReactElement, ReactHTML, RefObject} from 'react';
 import renderers, { renderBlock, renderInline, renderNoop } from './renderers';
-import { Text, View } from '@react-pdf/renderer';
-import parseHtml, { HtmlContent, HtmlElement } from './parse';
+import ReactPDF, { Text, View, StyleSheet } from '@react-pdf/renderer';
 import { createHtmlStylesheet, HtmlStyles } from './styles';
 import { Style } from '@react-pdf/types';
 import { isBlock, Tag } from './tags';
+import parseHtml, {HtmlContent, HtmlElement} from "./parse";
 
 export type HtmlRenderer = React.FC<{
   element: HtmlElement;
@@ -150,7 +150,7 @@ export const renderElement = (
   return (
     <Element
       key={index}
-      style={element.style}
+      style={element.pdfStyle}
       children={children}
       element={element}
       stylesheets={stylesheets}
@@ -193,7 +193,7 @@ export const renderElements = (
         index
       );
     });
-    const parentIsBlock = parentTag && isBlock[parentTag] === false;
+    const parentIsBlock = parentTag && !isBlock[parentTag];
     return bucket.hasBlock || parentIsBlock ? (
       <React.Fragment key={bucketIndex}>{rendered}</React.Fragment>
     ) : (
@@ -208,16 +208,16 @@ export const applyStylesheets = (
 ) => {
   stylesheets.forEach((stylesheet) => {
     for (const selector of Object.keys(stylesheet)) {
-      const elements = rootElement.querySelectorAll(selector) as HtmlElement[];
+      const elements = rootElement.querySelectorAll(selector) as unknown as HtmlElement[];
       elements.forEach((element) => {
-        element.style.push(stylesheet[selector]);
+        element.pdfStyle.push(stylesheet[selector]);
       });
     }
   });
 };
 
 const renderHtml = (
-  text: string,
+  root: RefObject<HTMLElement>,
   options: {
     collapse?: boolean;
     renderers?: HtmlRenderers;
@@ -249,7 +249,14 @@ const renderHtml = (
     fontSizeStyle.fontSize,
     options.resetStyles
   );
-  const parsed = parseHtml(text);
+
+  if(!root || !root.current) {
+    return (<view/>);
+  }
+
+  //
+
+  const parsed = parseHtml(root.current);
 
   const stylesheets = options.stylesheet
     ? Array.isArray(options.stylesheet)

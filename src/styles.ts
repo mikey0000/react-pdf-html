@@ -2,7 +2,16 @@ import { StyleSheet } from '@react-pdf/renderer';
 import { Style } from '@react-pdf/types';
 import { Tag } from './tags';
 
-export type HtmlStyles = Record<Tag | string, Style>;
+export type HtmlStyle =
+  | (Style & {
+      listStyle?: string;
+      listStyleType?: string;
+      borderSpacing?: number | string;
+      borderCollapse?: string;
+    })
+  | any;
+
+export type HtmlStyles = Record<Tag | string, HtmlStyle>;
 
 export const createHtmlStylesheet = <T extends HtmlStyles>(
   fontSize: number,

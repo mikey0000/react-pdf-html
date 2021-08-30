@@ -20,6 +20,7 @@ export default [
   'right',
   'top',
   'overflow',
+  'zIndex',
 
   // Dimension
   'height',

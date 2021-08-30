@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, {RefObject, useMemo} from 'react';
 import renderHtml, { HtmlRenderers } from './render';
 import { Style } from '@react-pdf/types';
 import { HtmlStyles } from './styles';
@@ -9,7 +9,7 @@ export type HtmlProps = {
   style?: Style | (Style | undefined)[];
   stylesheet?: HtmlStyles | HtmlStyles[];
   resetStyles?: boolean;
-  children: string;
+  children: RefObject<HTMLElement>;
 };
 
 const Html: React.FC<HtmlProps> = (props) => {
