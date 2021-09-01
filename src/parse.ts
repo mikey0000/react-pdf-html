@@ -125,7 +125,7 @@ export const convertNode = (node: Node): HtmlElement | string => {
     'alignContent',
     'alignItems',
     'alignSelf',
-    'flex',
+    // 'flex',
     'flexDirection',
     'flexWrap',
     'flexFlow',
@@ -154,7 +154,7 @@ export const convertNode = (node: Node): HtmlElement | string => {
     'width',
 
     // Color
-    //'backgroundColor', -- has issues
+    'backgroundColor',
     'color',
     'opacity',
 
@@ -164,7 +164,7 @@ export const convertNode = (node: Node): HtmlElement | string => {
     'fontStyle',
     'fontWeight',
     //'letterSpacing', -- has issues
-    //'lineHeight', -- has issues
+    'lineHeight',
     'maxLines',
     'textAlign',
     'textDecoration',
@@ -181,14 +181,14 @@ export const convertNode = (node: Node): HtmlElement | string => {
     'objectPositionY',
 
     // Margin/padding
-    'margin',
+    // 'margin',
     'marginHorizontal',
     'marginVertical',
     'marginTop',
     'marginRight',
     'marginBottom',
     'marginLeft',
-    'padding',
+    // 'padding',
     'paddingHorizontal',
     'paddingVertical',
     'paddingTop',
@@ -203,23 +203,23 @@ export const convertNode = (node: Node): HtmlElement | string => {
     'transformOriginY',
 
     // Borders
-    'border',
+    // 'border',
     'borderWidth',
     'borderColor',
     'borderStyle',
-    'borderTop',
+    // 'borderTop',
     'borderTopColor',
     'borderTopStyle',
     'borderTopWidth',
-    'borderRight',
+    // 'borderRight',
     'borderRightColor',
     'borderRightStyle',
     'borderRightWidth',
-    'borderBottom',
+    // 'borderBottom',
     'borderBottomColor',
     'borderBottomStyle',
     'borderBottomWidth',
-    'borderLeft',
+    // 'borderLeft',
     'borderLeftColor',
     'borderLeftStyle',
     'borderLeftWidth',
@@ -233,16 +233,14 @@ export const convertNode = (node: Node): HtmlElement | string => {
   //let computedStyle: Style | undefined;
   if (window) {
     const computedStyles = window.getComputedStyle(html);
+    //don't bother rendering
     if (computedStyles.getPropertyValue('display') === 'none') {
       return '';
     }
     suppStyles.forEach((key) => {
       const computedStyle = computedStyles[key as keyof CSSStyleDeclaration];
       if (computedStyle) {
-        style[key as keyof Style] = CssToPDFTranslate(
-          key,
-          computedStyle as string
-        );
+        CssToPDFTranslate(node.nodeType, style, key, computedStyle as string);
       }
     });
   }

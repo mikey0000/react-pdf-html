@@ -54,7 +54,7 @@ export const isBlock: Record<Tag, boolean> & Record<string, boolean> = {
 
   div: true,
   section: true,
-  span: true,
+  span: false,
   p: true,
   blockquote: true,
   article: true,

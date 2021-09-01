@@ -7,13 +7,18 @@ import { ImageProcessor } from "./image";
 
 export const renderNoop: HtmlRenderer = ({ children }) => <></>;
 
-export const renderBlock: HtmlRenderer = ({ style, children }) => (
-  <View style={style}>{children}</View>
-);
+export const renderBlock: HtmlRenderer = ({ style, children }) => {
 
-export const renderInline: HtmlRenderer = ({ style, children }) => (
-  <Text style={style}>{children}</Text>
-);
+  return (
+    <View style={style}>{children}</View>
+  )
+};
+
+export const renderInline: HtmlRenderer = ({ style, children }) => {
+  return (
+    <Text style={style}>{children}</Text>
+  )
+};
 
 export const renderCell: HtmlRenderer = ({ style, element, children }) => {
   const table = element.closest('table') as unknown as HtmlElement | undefined;
